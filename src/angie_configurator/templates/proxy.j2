@@ -1,0 +1,89 @@
+server {
+{% for port in config.ports %}
+    {% if port == 443 and ssl_paths %}
+    listen {{ port }} ssl;
+    {% else %}
+    listen {{ port }};
+    {% endif %}
+{% endfor %}
+    server_name {{ config.urls | join(' ') }};
+
+{% if ssl_paths %}
+    ssl_certificate {{ ssl_paths[0] }};
+    ssl_certificate_key {{ ssl_paths[1] }};
+{% endif %}
+
+{% if config.maintenance %}
+    location / {
+        return 503;
+    }
+    {% if config.maint_page %}
+    error_page 503 /{{ config.maint_page }};
+    location = /{{ config.maint_page }} {
+        root /var/www/html/maintenance;
+        internal;
+    }
+    {% else %}
+    error_page 503 /maintenance.html;
+    location = /maintenance.html {
+        root /var/www/html/maintenance;
+        internal;
+    }
+    {% endif %}
+{% else %}
+{% if config.allowed_ips %}
+    {% for ip in config.allowed_ips %}
+    allow {{ ip }};
+    {% endfor %}
+    deny all;
+{% endif %}
+
+{% if config.caching and config.caching.purge_endpoint %}
+    location /purge {
+        # This requires the proxy_cache_purge directive from nginx cache purge module
+        # If running basic Angie, might need specific syntax
+        allow 127.0.0.1;
+        deny all;
+        proxy_cache_purge STATIC $scheme$request_method$host$request_uri;
+    }
+{% endif %}
+
+    location / {
+{% if config.caching and config.caching.client_headers %}
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+{% endif %}
+{% if config.proxy_config %}
+{% if config.proxy_config.raw_config %}
+        {{ config.proxy_config.raw_config }}
+{% else %}
+        proxy_pass http://{{ config.proxy_config.dest_addr }}:{{ config.proxy_config.dest_port }};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+{% if config.caching and config.caching.server_cache %}
+        proxy_cache STATIC;
+        proxy_cache_valid 200 302 60m;
+        proxy_cache_valid 404 1m;
+{% endif %}
+{% endif %}
+{% endif %}
+    }
+
+{% if config.locations %}
+{% for loc_path, loc_config in config.locations.items() %}
+    location {{ loc_path }} {
+{% if loc_config.proxy_config %}
+{% if loc_config.proxy_config.raw_config %}
+        {{ loc_config.proxy_config.raw_config }}
+{% else %}
+        proxy_pass http://{{ loc_config.proxy_config.dest_addr }}:{{ loc_config.proxy_config.dest_port }};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+{% endif %}
+{% endif %}
+    }
+{% endfor %}
+{% endif %}
+
+{% endif %}
+}
