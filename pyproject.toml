@@ -1,0 +1,22 @@
+[project]
+name = "angie-configurator"
+version = "0.1.0"
+description = "Python-based management layer for Angie webserver."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "pydantic",
+    "pyyaml",
+    "watchdog",
+    "click"
+]
+
+[project.scripts]
+angie-gen = "angie_configurator.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
