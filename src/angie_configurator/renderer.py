@@ -3,13 +3,18 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from .schema import DomainConfig
 from .ssl_manager import get_ssl_paths
 
+SYSTEM_TEMPLATE_DIR = "/etc/angie-configurator/templates"
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 
 def setup_jinja_env() -> Environment:
     return Environment(
-        loader=FileSystemLoader(TEMPLATE_DIR),
+        loader=FileSystemLoader([SYSTEM_TEMPLATE_DIR, TEMPLATE_DIR]),
         autoescape=select_autoescape(['html', 'xml', 'j2'])
     )
+
+def list_templates() -> list[str]:
+    env = setup_jinja_env()
+    return env.list_templates(filter_func=lambda x: x.endswith('.j2'))
 
 def render_config(config: DomainConfig, env: Environment = None) -> str:
     """Render a single DomainConfig into a configuration string."""

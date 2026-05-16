@@ -15,6 +15,19 @@ def cli():
     pass
 
 @cli.command()
+def templates():
+    """List all available templates."""
+    from .renderer import list_templates
+    templates = list_templates()
+    if not templates:
+        click.echo("No templates found.")
+        return
+    click.echo("Available templates:")
+    for template in templates:
+        # Strip .j2 for cleaner display, or leave it. Leaving it to match Jinja behavior.
+        click.echo(f"  - {template}")
+
+@cli.command()
 def build():
     """Force validation and rebuild of all configurations."""
     click.echo("Starting build process...")
