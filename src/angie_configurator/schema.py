@@ -24,6 +24,7 @@ class DomainConfig(BaseModel):
     maintenance: bool = False
     maint_page: Optional[str] = None
     allowed_ips: Optional[List[str]] = None
+    allow_cloudflare: bool = False
     caching: Optional[CachingConfig] = None
     proxy_config: Optional[ProxyConfig] = None
     locations: Optional[Dict[str, LocationConfig]] = None
