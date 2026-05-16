@@ -7,6 +7,7 @@ from .config_loader import load_all_configs
 from .validator import check_url_collisions
 from .renderer import render_to_temp_dir
 from .server import test_nginx_config, reload_server, commit_vhosts, backup_yaml, backup_vhosts, restore_vhosts, cleanup_backup
+from .cloudflare import update_cloudflare_ips, CLOUDFLARE_IPS_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,12 @@ def build_all() -> Tuple[bool, str]:
         error_msg = "URL collisions detected:\n" + "\n".join(collisions)
         logger.error(error_msg)
         return False, error_msg
+
+    # Check if we need cloudflare IPs
+    needs_cloudflare = any(config.allow_cloudflare for config in configs)
+    if needs_cloudflare and not os.path.exists(CLOUDFLARE_IPS_FILE):
+        logger.info("Configuration requires Cloudflare IPs, but file is missing. Fetching now...")
+        update_cloudflare_ips()
 
     # 3. Render to temp
     with tempfile.TemporaryDirectory() as temp_dir:

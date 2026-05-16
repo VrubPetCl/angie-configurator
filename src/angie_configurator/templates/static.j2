@@ -31,10 +31,15 @@ server {
     }
     {% endif %}
 {% else %}
-{% if config.allowed_ips %}
+{% if config.allow_cloudflare or config.allowed_ips %}
+    {% if config.allow_cloudflare %}
+    include /etc/angie-configurator/cloudflare-ips.conf;
+    {% endif %}
+    {% if config.allowed_ips %}
     {% for ip in config.allowed_ips %}
     allow {{ ip }};
     {% endfor %}
+    {% endif %}
     deny all;
 {% endif %}
 

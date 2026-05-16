@@ -7,7 +7,9 @@ from watchdog.events import FileSystemEventHandler
 
 from .core import build_all, CONFIGS_DIR
 from .config_loader import load_all_configs
-from .server import test_nginx_config
+from .server import test_nginx_config, reload_server
+from .cloudflare import update_cloudflare_ips
+import threading
 
 @click.group()
 def cli():
@@ -59,12 +61,42 @@ def watch():
     observer.schedule(event_handler, CONFIGS_DIR, recursive=True)
     observer.start()
     click.echo(f"Watching {CONFIGS_DIR} for changes...")
+
+    def cloudflare_watchdog():
+        while True:
+            time.sleep(86400) # Sleep for 24 hours
+            click.echo("Running scheduled Cloudflare IP update...")
+            if update_cloudflare_ips():
+                click.echo("Cloudflare IPs updated. Reloading server to apply changes...")
+                reload_success, reload_output = reload_server()
+                if reload_success:
+                    click.secho("Server reloaded successfully.", fg="green")
+                else:
+                    click.secho(f"Server reload failed:\n{reload_output}", fg="red")
+
+    cf_thread = threading.Thread(target=cloudflare_watchdog, daemon=True)
+    cf_thread.start()
+
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+@cli.command()
+def update_cf_ips():
+    """Manually force an update of Cloudflare IPs."""
+    click.echo("Fetching and updating Cloudflare IPs...")
+    if update_cloudflare_ips():
+        click.echo("Cloudflare IPs were updated. Reloading server...")
+        reload_success, reload_output = reload_server()
+        if reload_success:
+            click.secho("Server reloaded successfully.", fg="green")
+        else:
+            click.secho(f"Server reload failed:\n{reload_output}", fg="red")
+    else:
+        click.echo("Cloudflare IPs are already up to date. No action needed.")
 
 @cli.command()
 @click.argument('domain')
