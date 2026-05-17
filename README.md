@@ -2,6 +2,8 @@
 
 A Python-based management layer for the Angie (or Nginx) webserver. It uses individual YAML files per domain as the single source of truth, performs strict Pydantic validation, and features a robust atomic rollback mechanism to guarantee your webserver configuration is never broken.
 
+> **Note**: For detailed documentation on configuration settings, custom templates, and setting up the watchdog service, please refer to the [User Guide](docs/USER_GUIDE.md).
+
 ## Features
 
 - **YAML Source of Truth**: Manage domains declaratively.
